@@ -17,14 +17,8 @@ public class LocationTracker {
 //            Log.d(LOG_TAG, "onLocationChanged " + myLocation.toString());
 //            Log.d(LOG_TAG, location.toString());
             lastLocation = myLocation;
-            // TODO: remove
-//            ArrayList<ProximityInterest> dists = ProximityInterest.calculate(myLocation);
-//            for (ProximityInterest pi : dists ) {
-//                Log.d("LOCATION", "distance: " + pi.getLocationOfInterest().getProvider() + " " + pi.getDistance());
-//            }
-//            MainActivity.updateUIWithLocationDiff(ProximityInterest.calculate(myLocation));
 
-            MainActivity.mapLocationUpdateToBikeStations(myLocation);
+//            MainActivity.mapLocationUpdateToBikeStations(myLocation);
         }
 
         @Override

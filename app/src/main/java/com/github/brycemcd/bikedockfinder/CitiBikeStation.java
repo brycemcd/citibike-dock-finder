@@ -88,6 +88,12 @@ public class CitiBikeStation {
         setDistanceAway(distance);
     }
 
+    public static void updateRelativeLocationToStations(Location userLocation) {
+        for(CitiBikeStation cbs : interestingStations.values()) {
+            cbs.updateDistanceAway(userLocation);
+        }
+    }
+
 
     /**
      * Useful for pre-populating a list of stations with data that doesn't change for the session
@@ -112,6 +118,29 @@ public class CitiBikeStation {
 
     public String toDisplay() {
         return stationName + " \nDocks: " + Integer.toString(docksAvailable) + " Distance: " + Double.toString(Math.round(distanceAway));
+    }
+
+    public static String shortDockStatus() {
+        int bleekerStationId = 303;
+        return shortDockStatus(bleekerStationId);
+    }
+
+    public static String shortDockStatus(int stationIdOfInterest) {
+        CitiBikeStation cbs = CitiBikeStation.interestingStations.get(stationIdOfInterest);
+        if (cbs != null) {
+            return cbs.stationName + ": Docks: " + cbs.getDocksAvailable();
+        } else {
+            return Integer.valueOf(stationIdOfInterest) + " station not available";
+        }
+    }
+
+    public static ArrayList<String> longDockStatus() {
+        ArrayList<String> rets = new ArrayList<>();
+        for(CitiBikeStation cbs : interestingStations.values()) {
+            rets.add(shortDockStatus(cbs.stationId));
+        }
+
+        return rets;
     }
 
     public static HashMap<Integer, CitiBikeStation> interestingStations = new HashMap<>();
