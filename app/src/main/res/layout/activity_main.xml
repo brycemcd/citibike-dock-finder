@@ -10,22 +10,21 @@
         android:id="@+id/button2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="60dp"
+        android:layout_marginBottom="16dp"
         android:onClick="startFencingBtn"
         android:text="get Data"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/distanceText"
-        android:layout_width="293dp"
-        android:layout_height="117dp"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         android:text="This will show calculation"
-        android:textSize="18sp"
+        android:textSize="10sp"
         app:layout_constraintBottom_toTopOf="@+id/jsonResults"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -34,11 +33,12 @@
     <TextView
         android:id="@+id/jsonResults"
         android:layout_width="400dp"
-        android:layout_height="178dp"
+        android:layout_height="79dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         android:text="TextView"
         android:textAlignment="textStart"
+        android:textSize="14sp"
         app:layout_constraintBottom_toTopOf="@+id/button2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.727"
@@ -48,12 +48,26 @@
 
     <ListView
         android:id="@+id/stationList"
-        android:layout_width="395dp"
+        android:layout_width="wrap_content"
         android:layout_height="231dp"
         android:layout_marginTop="8dp"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/updateBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:onClick="updateWithoutFetch"
+        android:text="Update w/o Fetch"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/button2"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

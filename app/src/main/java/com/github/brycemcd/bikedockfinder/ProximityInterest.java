@@ -33,7 +33,7 @@ public class ProximityInterest {
 
 
     /**
-     * Calculates distance between current location and _the_ location of interest
+     * Calculates distance between current location and the station of interest
      * @param location
      * @return (int) meters to the location of interest
      */

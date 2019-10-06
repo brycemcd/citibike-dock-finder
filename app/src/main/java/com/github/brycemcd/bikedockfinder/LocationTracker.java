@@ -13,15 +13,18 @@ public class LocationTracker {
 
     public LocationListener locationListener = new LocationListener() {
         @Override
-        public void onLocationChanged(Location location) {
-//            Log.d(LOG_TAG, "onLocationChanged");
+        public void onLocationChanged(Location myLocation) {
+//            Log.d(LOG_TAG, "onLocationChanged " + myLocation.toString());
 //            Log.d(LOG_TAG, location.toString());
-            lastLocation = location;
-            ArrayList<ProximityInterest> dists = ProximityInterest.calculate(location);
-            for (ProximityInterest pi : dists ) {
-                Log.d("LOCATION", "distance: " + pi.getLocationOfInterest().getProvider() + " " + pi.getDistance());
-            }
-            MainActivity.updateUIWithLocationDiff(ProximityInterest.calculate(location));
+            lastLocation = myLocation;
+            // TODO: remove
+//            ArrayList<ProximityInterest> dists = ProximityInterest.calculate(myLocation);
+//            for (ProximityInterest pi : dists ) {
+//                Log.d("LOCATION", "distance: " + pi.getLocationOfInterest().getProvider() + " " + pi.getDistance());
+//            }
+//            MainActivity.updateUIWithLocationDiff(ProximityInterest.calculate(myLocation));
+
+            MainActivity.mapLocationUpdateToBikeStations(myLocation);
         }
 
         @Override

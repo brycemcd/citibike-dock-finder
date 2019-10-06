@@ -1,5 +1,6 @@
 package com.github.brycemcd.bikedockfinder;
 
+import android.location.Location;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -16,6 +17,10 @@ public class CitiBikeStation {
     public int bikesAvailable;
     public int docksAvailable;
     public int lastReported;
+    public double latitude;
+    public double longitude;
+    public Location stationLocation;
+    public double distanceAway;
 
     public int getStationId() {
         return stationId;
@@ -57,6 +62,8 @@ public class CitiBikeStation {
         this.lastReported = lastReported;
     }
 
+    public void setDistanceAway(float distanceAway) { this.distanceAway = distanceAway; }
+
     public CitiBikeStation(String stationName, int stationId, int bikesAvailable, int docksAvailable, int lastReported) {
         this.stationName = stationName;
         this.stationId = stationId;
@@ -65,24 +72,69 @@ public class CitiBikeStation {
         this.lastReported = lastReported;
     }
 
+    public void addBikeDockInfo(JSONObject station) {
+        try {
+            setBikesAvailable(station.getInt("num_bikes_available"));
+            setDocksAvailable(station.getInt("num_docks_available"));
+            setLastReported(station.getInt("last_reported"));
+        } catch (JSONException e) {
+            Log.e("Add Bike Dock Info", e.getMessage(), e);
+        }
+    }
+
+    public void updateDistanceAway(Location myLocation) {
+        float distance = myLocation.distanceTo(stationLocation);
+        Log.d("DISTANCE UPDATE", stationName + " " + Float.toString(distance) + this.toString());
+        setDistanceAway(distance);
+    }
+
+
+    /**
+     * Useful for pre-populating a list of stations with data that doesn't change for the session
+     * @param location
+     */
+    public CitiBikeStation(Location location) {
+        this.stationId = Integer.valueOf(location.getProvider());
+        this.stationLocation = location;
+
+        // NOTE: this is indexed by a String
+        this.stationName = StationsOfInterest.stationMap.get(location.getProvider());
+
+
+        this.latitude = location.getLongitude();
+        this.longitude = location.getLatitude();
+    }
+
     @Override
     public String toString() {
-        return stationName + " Docks: " + Integer.toString(docksAvailable);
+        return stationId + " Docks: " + Integer.toString(docksAvailable) + " location: " + stationLocation.toString();
+    }
+
+    public String toDisplay() {
+        return stationName + " \nDocks: " + Integer.toString(docksAvailable) + " Distance: " + Double.toString(Math.round(distanceAway));
+    }
+
+    public static HashMap<Integer, CitiBikeStation> interestingStations = new HashMap<>();
+
+    /**
+     * Designed to be called before populating stations with data
+     */
+    public static void populateStationsOfInterest() {
+        for (Location station : StationsOfInterest.allStations()) {
+            Log.d("populateStations", station.toString());
+
+            CitiBikeStation citiBikeStation = new CitiBikeStation(station);
+
+            interestingStations.put(citiBikeStation.stationId, citiBikeStation);
+        }
     }
 
     // HOLY CRAP IS THIS INEFFICIENT
-    public static ArrayList<CitiBikeStation> parseStationInfo(JSONObject apiresults) {
-        ArrayList<CitiBikeStation> stationResults = new ArrayList<>();
-
-        HashSet<String> stationIdsOfInterest = new HashSet<>();
-        stationIdsOfInterest.add("303");
-        stationIdsOfInterest.add("161");
-        stationIdsOfInterest.add("229");
-
-        HashMap<String, String> stationMap = new HashMap<>();
-        stationMap.put("161", "LaGuardia Pl & W 3 St");
-        stationMap.put("229", "Great Jones St");
-        stationMap.put("303", "Mercer St & Bleecker St");
+    public static HashMap<Integer, CitiBikeStation> parseStationInfo(JSONObject apiresults) {
+        // We're enriching data in this operation. If the data is not there to enrich, it'll fail
+        if (interestingStations.isEmpty() ) {
+            populateStationsOfInterest();
+        }
 
         try {
             JSONObject data = apiresults.getJSONObject("data");
@@ -90,24 +142,20 @@ public class CitiBikeStation {
 
             for (int i = 0; i < stations.length(); i++) {
                 JSONObject station = stations.getJSONObject(i);
-                String stationId = station.getString("station_id");
-                if ( stationIdsOfInterest.contains(stationId) ) {
-                    Log.d("STATION", stationId);
+                int stationId = station.getInt("station_id");
 
-                    CitiBikeStation cbs = new CitiBikeStation(
-                            stationMap.get(stationId),
-                            Integer.valueOf(stationId),
-                            station.getInt("num_bikes_available"),
-                            station.getInt("num_docks_available"),
-                            station.getInt("last_reported")
-                    );
-                    stationResults.add(cbs);
+                if ( interestingStations.keySet().contains(stationId) ) {
+                    Log.d("STATION", Integer.toString(stationId));
+
+                    CitiBikeStation cbs = interestingStations.get(stationId);
+                    cbs.addBikeDockInfo(station);
+
                 }
             }
         } catch(JSONException e) {
             Log.e("STATION", "EXCePTION", e);
         }
 
-        return stationResults;
+        return interestingStations;
     }
 }

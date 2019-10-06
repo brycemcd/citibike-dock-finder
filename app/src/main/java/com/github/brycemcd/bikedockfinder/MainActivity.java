@@ -18,7 +18,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -42,7 +44,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
@@ -65,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<String> stations = new ArrayList<>();
     ListView stationList;
+    private static final int LIST_VIEW_TEXT_SIZE_DP = 25;
     ArrayAdapter arrayAdapter;
 
 
@@ -90,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        CitiBikeStation.populateStationsOfInterest();
+
         jsonResults = findViewById(R.id.jsonResults);
 
         activityContext = this;
@@ -105,9 +113,37 @@ public class MainActivity extends AppCompatActivity {
         }
 
         stationList = findViewById(R.id.stationList);
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, stations);
+        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, stations) {
+            // NOTE: all this BS is needed to change the text size :(
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent){
+                /// Get the Item from ListView
+                View view = super.getView(position, convertView, parent);
+
+                TextView tv = (TextView) view.findViewById(android.R.id.text1);
+
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, LIST_VIEW_TEXT_SIZE_DP);
+
+                // Return the view
+                return view;
+            }
+        };
 
         stationList.setAdapter(arrayAdapter);
+    }
+
+    public void updateWithoutFetch(View v) {
+        updateUI();
+    }
+
+    public void updateUI() {
+        stations.clear();
+        arrayAdapter.notifyDataSetChanged();
+
+        for(CitiBikeStation cbs : CitiBikeStation.interestingStations.values()) {
+            stations.add(cbs.toDisplay());
+        }
+        arrayAdapter.notifyDataSetChanged();
     }
 
     public void startFencingBtn(View v) {
@@ -116,6 +152,10 @@ public class MainActivity extends AppCompatActivity {
         new JsonTask().execute(url);
     }
 
+    public void updateStationDataTime() {
+        Date timeNow = Calendar.getInstance().getTime();
+        jsonResults.setText("Station data last updated: " + timeNow.toString());
+    }
     public static void updateUIWithLocationDiff(ArrayList<ProximityInterest> proximityInterests) {
         TextView distanceText = ((Activity) activityContext).findViewById(R.id.distanceText);
         String txt = "";
@@ -130,6 +170,12 @@ public class MainActivity extends AppCompatActivity {
         distanceText.setText(txt);
     }
 
+    public static void mapLocationUpdateToBikeStations(Location myLocation) {
+        for(CitiBikeStation cbs : CitiBikeStation.interestingStations.values()) {
+            cbs.updateDistanceAway(myLocation);
+        }
+    }
+
     // https://stackoverflow.com/questions/33229869/get-json-data-from-url-using-android
     // NOTE: in clojure, this is just `open`
     private class JsonTask extends AsyncTask<String, String, JSONObject> {
@@ -137,9 +183,6 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-//            for (int i = 0; i < stations.c; i++) {
-//                stations.remove(i);
-//            }
             stations.clear();
             arrayAdapter.notifyDataSetChanged();
 
@@ -157,17 +200,21 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(JSONObject result) {
             super.onPostExecute(result);
 
-            jsonResults.setText(result.toString());
+            // NOTE: this updates the UI with a butt load of JSON
+//            jsonResults.setText(result.toString());
+            updateStationDataTime();
             pd.hide();
-            ArrayList<CitiBikeStation> stationInfos = CitiBikeStation.parseStationInfo(result);
-            stationInfos.sort(new Comparator<CitiBikeStation>() {
+            HashMap<Integer, CitiBikeStation> stationInfos = CitiBikeStation.parseStationInfo(result);
+            ArrayList<CitiBikeStation> justStations = new ArrayList<>( stationInfos.values() );
+            justStations.sort(new Comparator<CitiBikeStation>() {
                 @Override
                 public int compare(CitiBikeStation o1, CitiBikeStation o2) {
                     return o1.getStationName().compareTo(o2.getStationName());
                 }
             });
-            for(CitiBikeStation cbs : stationInfos) {
-                stations.add(cbs.toString());
+
+            for(CitiBikeStation cbs : justStations) {
+                stations.add(cbs.toDisplay());
                 arrayAdapter.notifyDataSetChanged();
             }
         }
