@@ -23,6 +23,8 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -74,15 +76,10 @@ public class MainActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private LocationListener locationListener;
     public ProgressDialog pd;
-    public TextView jsonResults;
+    public TextView lastUpdated;
 
     public LocationTrackerFoo lt = new LocationTrackerFoo();
     public static Context activityContext;
-
-    ArrayList<String> stations = new ArrayList<>();
-    ListView stationList;
-    private static final int LIST_VIEW_TEXT_SIZE_DP = 25;
-    ArrayAdapter arrayAdapter;
 
     boolean hasNotified = false; // Notify once and only once
 
@@ -116,9 +113,9 @@ public class MainActivity extends AppCompatActivity {
 
         CitiBikeStation.populateStationsOfInterest();
 
-        jsonResults = findViewById(R.id.jsonResults);
-
         activityContext = this;
+
+        lastUpdated = findViewById(R.id.lastUpdatedTxt);
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationListener = lt.locationListener;
@@ -126,33 +123,44 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         } else {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+            // NOTE: this is REALLY noisy in the console
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 0, locationListener);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 10000, 0, locationListener);
         }
-
-        stationList = findViewById(R.id.stationList);
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, stations) {
-            // NOTE: all this BS is needed to change the text size :(
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent){
-                /// Get the Item from ListView
-                View view = super.getView(position, convertView, parent);
-
-                TextView tv = (TextView) view.findViewById(android.R.id.text1);
-
-                tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, LIST_VIEW_TEXT_SIZE_DP);
-
-                // Return the view
-                return view;
-            }
-        };
-
-        stationList.setAdapter(arrayAdapter);
 
         updateCitiData();
         refreshCycle();
 
+        // NOTE: this was very helpful: https://guides.codepath.com/android/using-the-recyclerview
+        // Lookup the recyclerview in activity layout
+        RecyclerView rvStations = (RecyclerView) findViewById(R.id.rvStations);
+
+        // get stations
+        for (CitiBikeStation cbs : CitiBikeStation.interestingStations.values()) {
+            rvcitiBikeStations.add(cbs);
+        }
+
+        rvcitiBikeStations.sort(new Comparator<CitiBikeStation>() {
+            @Override
+            public int compare(CitiBikeStation o1, CitiBikeStation o2) {
+                // NOTE: this is a _reverse_ sort! (it happens to work in the order I like)
+                return o2.getStationName().compareTo(o1.getStationName());
+            }
+        });
+
+        // Create adapter passing in the sample user data
+        adapter = new CitiBikeStationAdapter(rvcitiBikeStations);
+        // Attach the adapter to the recyclerview to populate items
+        rvStations.setAdapter(adapter);
+        // Set layout manager to position the items
+        rvStations.setLayoutManager(new LinearLayoutManager(this));
+        // That's all!
+
     }
+
+    CitiBikeStationAdapter adapter;
+
+    ArrayList<CitiBikeStation> rvcitiBikeStations = new ArrayList<>();
 
     public void refreshCycle() {
 
@@ -171,13 +179,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void updateUI() {
-        stations.clear();
-        arrayAdapter.notifyDataSetChanged();
-
-        for(CitiBikeStation cbs : CitiBikeStation.interestingStations.values()) {
-            stations.add(cbs.toDisplay());
-        }
-        arrayAdapter.notifyDataSetChanged();
+        adapter.notifyDataSetChanged();
     }
 
     public void startFencingBtn(View v) {
@@ -191,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void updateStationDataTime() {
         Date timeNow = Calendar.getInstance().getTime();
-        jsonResults.setText("Station data last updated: " + timeNow.toString());
+        lastUpdated.setText("Station data last updated: " + timeNow.toString());
     }
 
     // NOTIFICATION STUFF
@@ -267,9 +269,6 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            stations.clear();
-            arrayAdapter.notifyDataSetChanged();
-
             pd = new ProgressDialog(MainActivity.this);
             pd.setMessage("Fetching Citibike Data");
             pd.setCancelable(false);
@@ -285,18 +284,9 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(result);
 
             // NOTE: this updates the UI with a butt load of JSON
-//            jsonResults.setText(result.toString());
             updateStationDataTime();
             pd.hide();
-            HashMap<Integer, CitiBikeStation> stationInfos = CitiBikeStation.parseStationInfo(result);
-            ArrayList<CitiBikeStation> justStations = new ArrayList<>( stationInfos.values() );
-            justStations.sort(new Comparator<CitiBikeStation>() {
-                @Override
-                public int compare(CitiBikeStation o1, CitiBikeStation o2) {
-                    return o1.getStationName().compareTo(o2.getStationName());
-                }
-            });
-
+            CitiBikeStation.parseStationInfo(result);
             updateUI();
         }
     }

@@ -33,6 +33,7 @@ public class CitiBikeStation {
     public String getStationName() {
         return stationName;
     }
+    public Double getDistanceAway() { return distanceAway; }
 
     public void setStationName(String stationName) {
         this.stationName = stationName;
@@ -132,15 +133,6 @@ public class CitiBikeStation {
         } else {
             return Integer.valueOf(stationIdOfInterest) + " station not available";
         }
-    }
-
-    public static ArrayList<String> longDockStatus() {
-        ArrayList<String> rets = new ArrayList<>();
-        for(CitiBikeStation cbs : interestingStations.values()) {
-            rets.add(shortDockStatus(cbs.stationId));
-        }
-
-        return rets;
     }
 
     public static HashMap<Integer, CitiBikeStation> interestingStations = new HashMap<>();
