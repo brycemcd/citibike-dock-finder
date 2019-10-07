@@ -14,6 +14,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -55,6 +56,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 
 /**
@@ -64,6 +67,8 @@ import java.util.TreeSet;
  * MUST have high GPS accuracy turned on: https://stackoverflow.com/questions/53996168/geofence-not-avaible-code-1000-while-trying-to-set-up-geofence
  */
 public class MainActivity extends AppCompatActivity {
+
+    public static final String NOTIFICATION_CHANNEL_ID = "CitiBikeFenceChannel";
 
     private Location currentLocation;
     private LocationManager locationManager;
@@ -80,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter arrayAdapter;
 
     boolean hasNotified = false; // Notify once and only once
+
+    public Handler handler = new Handler();
+    public int refreshRate = 2 * 60 * 1000; // every 2 minutes seems reasonable?
 
 
     @Override
@@ -142,6 +150,20 @@ public class MainActivity extends AppCompatActivity {
         stationList.setAdapter(arrayAdapter);
 
         updateCitiData();
+        refreshCycle();
+
+    }
+
+    public void refreshCycle() {
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.d("DELAYED", "running now");
+                updateCitiData();
+                refreshCycle();
+            }
+        }, refreshRate);
     }
 
     public void updateWithoutFetch(View v) {
@@ -173,30 +195,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // NOTIFICATION STUFF
-    public String CHANNEL_ID = "foo";
-    public void sendNotificationBtn(View v) { sendNotification(); }
     public void sendNotification() {
 
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
+        NotificationCompat.InboxStyle notificationCompat = new NotificationCompat.InboxStyle();
 
-        ArrayList<String> stationDocks = CitiBikeStation.longDockStatus();
+        for (CitiBikeStation cbs : CitiBikeStation.interestingStations.values()) {
+            notificationCompat.addLine(cbs.shortDockStatus(cbs.stationId) );
+        }
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_menu_delete)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setContentTitle("Dock Status:")
                 .setContentText(CitiBikeStation.shortDockStatus())
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setStyle(new NotificationCompat.InboxStyle()
-                        .addLine(stationDocks.get(0))
-                        .addLine(stationDocks.get(1))
-                        .addLine(stationDocks.get(2)))
-
-//                .setStyle(new NotificationCompat.BigTextStyle()
-//                    .bigText(CitiBikeStation.longDockStatus()))
+                .setStyle(notificationCompat)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
@@ -213,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
             CharSequence name = (CharSequence) "citi bike main"; // getString(R.string.channel_name);
             String description = "notification channel desc woo"; //getString(R.string.channel_description);
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
             channel.setDescription(description);
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
@@ -237,20 +254,6 @@ public class MainActivity extends AppCompatActivity {
     }
     // END NOTIFICATION STUFF
 
-    public static void updateUIWithLocationDiff(ArrayList<ProximityInterest> proximityInterests) {
-        TextView distanceText = ((Activity) activityContext).findViewById(R.id.distanceText);
-        String txt = "";
-        for(ProximityInterest pi : proximityInterests) {
-            txt += "\n";
-            txt += "Location: " + pi.getLocationOfInterest().getProvider();
-            txt += "\n";
-            txt += "Distance: " + pi.getDistance() + "\n";
-            txt += "---";
-            txt += "\n";
-        }
-        distanceText.setText(txt);
-    }
-
     public void updateCurrentLocation(Location newLocation) {
         this.currentLocation = newLocation;
         CitiBikeStation.updateRelativeLocationToStations(newLocation);
@@ -268,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
             arrayAdapter.notifyDataSetChanged();
 
             pd = new ProgressDialog(MainActivity.this);
-            pd.setMessage("Please wait");
+            pd.setMessage("Fetching Citibike Data");
             pd.setCancelable(false);
             pd.show();
         }
@@ -294,10 +297,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            for(CitiBikeStation cbs : justStations) {
-                stations.add(cbs.toDisplay());
-                arrayAdapter.notifyDataSetChanged();
-            }
+            updateUI();
         }
     }
 
@@ -307,8 +307,6 @@ public class MainActivity extends AppCompatActivity {
         public LocationListener locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location myLocation) {
-//            Log.d(LOG_TAG, "onLocationChanged " + myLocation.toString());
-//            Log.d(LOG_TAG, location.toString());
                 updateCurrentLocation(myLocation);
             }
 
