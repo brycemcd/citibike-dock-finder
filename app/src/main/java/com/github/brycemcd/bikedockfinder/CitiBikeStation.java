@@ -21,6 +21,15 @@ public class CitiBikeStation {
     public double longitude;
     public Location stationLocation;
     public double distanceAway;
+    public double distanceToDestination;
+
+    public void setDistanceToDestination(double distanceToDestination) {
+        this.distanceToDestination = distanceToDestination;
+    }
+
+    public double getDistanceToDestination() {
+        return this.distanceToDestination;
+    }
 
     public int getStationId() {
         return stationId;
@@ -110,6 +119,9 @@ public class CitiBikeStation {
 
         this.latitude = location.getLongitude();
         this.longitude = location.getLatitude();
+
+        double distanceFromDestination = location.distanceTo(StationsOfInterest.workLocation);
+        setDistanceToDestination(distanceFromDestination);
     }
 
     @Override
@@ -122,7 +134,7 @@ public class CitiBikeStation {
     }
 
     public static String shortDockStatus() {
-        int bleekerStationId = 303;
+        int bleekerStationId = 437;
         return shortDockStatus(bleekerStationId);
     }
 

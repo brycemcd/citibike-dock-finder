@@ -12,13 +12,21 @@ import java.util.List;
  */
 public class StationsOfInterest {
 
+    public static final Location workLocation;
+    static {
+        workLocation = new Location("work");
+        workLocation.setLongitude(-73.99593);
+        workLocation.setLatitude(40.72621);
+    }
+
     // NOTE: this is pretty dumb and Java < 8-y
     public static HashMap<String, String> stationMap;
     static {
         stationMap = new HashMap<>();
         stationMap.put("161", "LaGuardia Pl & W 3 St");
         stationMap.put("229", "Great Jones St");
-        stationMap.put("303", "Mercer St & Bleecker St");
+        stationMap.put("437", "Mercer St & Bleecker St");
+//        stationMap.put("303", "Mercer St & Spring St");
     }
 
     public static List<Location> allStations() {
@@ -39,7 +47,7 @@ public class StationsOfInterest {
         // These are the stations I care about for docking:
         // station_id = 303
         // name = Mercer & Bleeker
-        Location firstChoice = new Location("303");
+        Location firstChoice = new Location("437");
         firstChoice.setLongitude(-73.99662137031554);
         firstChoice.setLatitude(40.72706363348306);
 

@@ -143,8 +143,7 @@ public class MainActivity extends AppCompatActivity {
         rvcitiBikeStations.sort(new Comparator<CitiBikeStation>() {
             @Override
             public int compare(CitiBikeStation o1, CitiBikeStation o2) {
-                // NOTE: this is a _reverse_ sort! (it happens to work in the order I like)
-                return o2.getStationName().compareTo(o1.getStationName());
+                return (int) Math.round(o1.getDistanceToDestination() - o2.getDistanceToDestination());
             }
         });
 
@@ -243,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void notifyIfClose() {
         // For this app, I care how close to Bleeker & Mercer I am.
-        int bleekerStationId = 303;
+        int bleekerStationId = 437;
         float distanceToNotify = 400; // This is totally made up
         CitiBikeStation bleekerSt = CitiBikeStation.interestingStations.get(bleekerStationId);
         if (bleekerSt.distanceAway <= distanceToNotify && !hasNotified) {

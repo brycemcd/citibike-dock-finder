@@ -21,6 +21,7 @@ public class CitiBikeStationAdapter extends RecyclerView.Adapter<CitiBikeStation
         public TextView nameTextView;
         public TextView docksCount;
         public TextView distanceToDock;
+        public TextView dockToDestinationDistance;
 
         // We also create a constructor that accepts the entire item row
         // and does the view lookups to find each subview
@@ -32,6 +33,7 @@ public class CitiBikeStationAdapter extends RecyclerView.Adapter<CitiBikeStation
             nameTextView = (TextView) itemView.findViewById(R.id.station_name);
             docksCount = (TextView) itemView.findViewById(R.id.docksCount);
             distanceToDock = (TextView) itemView.findViewById(R.id.distanceToDock);
+            dockToDestinationDistance = (TextView) itemView.findViewById(R.id.dockToDestinationDistance);
         }
     }
 
@@ -68,6 +70,9 @@ public class CitiBikeStationAdapter extends RecyclerView.Adapter<CitiBikeStation
 
         TextView distanceToDock = viewHolder.distanceToDock;
         distanceToDock.setText(Double.toString(Math.round(citiBikeStation.getDistanceAway())));
+
+        TextView dockToDestinationDistance = viewHolder.dockToDestinationDistance;
+        dockToDestinationDistance.setText(Double.toString(Math.round(citiBikeStation.getDistanceToDestination())));
     }
 
     // Returns the total count of items in the list
